@@ -7,6 +7,7 @@
 <canvas id="myCanvas"></canvas>
 <script>
 
+    // Button Events
     document.getElementById("goBtn").onclick = function() {
         start(document.getElementById("intervalInMilli").value);
     }
@@ -14,6 +15,7 @@
         if (inProgress) stop = true;
     }
 
+    // Pixel Object
     class Pixel {
         constructor(x, y, draw, color) {
             this.x = x;
@@ -38,6 +40,7 @@
         }
     }
 
+    // Declarations
     var clickedPoint;
     var ap;
     var bp;
@@ -47,6 +50,8 @@
     var stop = false;
     var inProgress = false;
 
+    // Setup Function
+    // Places and instantiates base points A, B, and C as well as calculates the total area
     function setup() {
         
         ap = new Pixel(25, 600, true);
@@ -63,12 +68,14 @@
 
     }
 
+    // Function to get Area of a Triangle
     function getArea(p1, p2, p3) {
         return Math.abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
     }
 
+    // Start Function
     function start(intervalInMilli) {
-        // Plot random point
+        // Use the pixel placed by the user, or choose a random point if none is provided
         var p;
         if (clickedPoint == null) p = randomPoint("#ff3300");
         else {
@@ -76,7 +83,7 @@
             clickedPoint = null;
         }
 
-        // Start loop
+        // Start loop if interval > 0, else execute until maximum callback limit
         if (intervalInMilli != 0) {
             inProgress = true;
             document.getElementById("goBtn").disabled = true;
@@ -85,7 +92,9 @@
         loop(p, Math.abs(intervalInMilli));
     }
 
+    // Recursive Loop Function
     async function loop(p, interval) {
+        // Stop loop if stop button is clicked
         if (stop) {
             stop = false;
             inProgress = false;
@@ -93,16 +102,22 @@
             document.getElementById("stopBtn").disabled = true;
             return;
         }
+        // Choose a random base point (A, B, or C)
         var baseP = randomBasePoint();
 
+        // Calculate x and y coordinates of the midpoint
         var x = (baseP.x + p.x)/2;
         var y = (baseP.y + p.y)/2;
+        // Create and draw the midpoint pixel and set as latest point
         p = new Pixel(x, y, true);
 
+        // If interval is not 0, wait for specified interval
         if (interval != 0) await sleep(interval);
+        // Recurse
         loop(p, interval);
     }
 
+    // Function to choose a random base point (A, B, or C)
     function randomBasePoint() {
         const num = Math.floor(Math.random() * 3);
 
@@ -111,12 +126,15 @@
         else return cp;
     }
 
+    // Function to generate a random point inside the triangle
     function randomPoint(color) {
+        // Create Square dimensions using the triangle base points
         var x1 = ap.x;
         var y1 = bp.y;
         var x2 = cp.x;
         var y2 = cp.y;
 
+        // Repeat creating a pixel within the square until it is inside the triangle
         var p;
         do {
             var randX = Math.floor(Math.random() * x2-x1) + x1;
@@ -127,6 +145,7 @@
         return p;
     }
 
+    // Function to check if point is inside the triangle
     function isInTriangle(point) {
         let a1 = getArea(point, bp, cp);
         let a2 = getArea(ap, point, cp);
@@ -135,14 +154,17 @@
         return a1+a2+a3 == area;
     }
 
+    // Sleep Function
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // Setup
     const canvas = document.getElementById("myCanvas");
     canvas.width = innerWidth;
     canvas.height = innerHeight;
 
+    // Change cursor to pointer when inside the triangle
     canvas.onmousemove = function(event) {
         if (isInTriangle(new Pixel(event.pageX, event.pageY, false))) {
             canvas.style.cursor = "pointer";
@@ -150,12 +172,12 @@
             canvas.style.cursor = "default";
         }
     }
+    // Place a point when the user clicks anywhere inside the triangle
     canvas.onclick = function(event) {
         if (inProgress || !isInTriangle(new Pixel(event.pageX, event.pageY, false))) return;
 
         if (clickedPoint != null) clickedPoint.clear();
         clickedPoint = new Pixel(event.pageX, event.pageY, true, "#ff3300");
-        // highlight(event.pageX, event.pageY);
     }
 
     const c = canvas.getContext("2d");
