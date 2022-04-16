@@ -1,0 +1,165 @@
+<p style="position:absolute;top:620px;">
+    Interval In Milliseconds:
+    <input type="number" name="interval" id="intervalInMilli" value="50">
+    <button id="goBtn">Go</button>
+    <button id="stopBtn" disabled>Stop</button>
+</p>
+<canvas id="myCanvas"></canvas>
+<script>
+
+    document.getElementById("goBtn").onclick = function() {
+        start(document.getElementById("intervalInMilli").value);
+    }
+    document.getElementById("stopBtn").onclick = function() {
+        if (inProgress) stop = true;
+    }
+
+    class Pixel {
+        constructor(x, y, draw, color) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            if (draw) this.draw();
+        }
+
+        draw() {
+            c.beginPath();
+            c.rect(this.x, this.y, 2, 2);
+            if (this.color != null) c.fillStyle = this.color;
+            else c.fillStyle = "#000000";
+            c.fill();
+        }
+
+        clear() {
+            c.beginPath();
+            c.rect(this.x, this.y, 2, 2);
+            c.fillStyle = "#ffffff";
+            c.fill();
+        }
+    }
+
+    var clickedPoint;
+    var ap;
+    var bp;
+    var cp;
+    var area;
+
+    var stop = false;
+    var inProgress = false;
+
+    function setup() {
+        
+        ap = new Pixel(25, 600, true);
+        c.font = "20px Arial";
+        c.fillText("A", 5, 600);
+        bp = new Pixel(300, 25, true);
+        c.font = "20px Arial";
+        c.fillText("B", 310, 25);
+        cp = new Pixel(600, 600, true);
+        c.font = "20px Arial";
+        c.fillText("C", 610, 600    );
+
+        area = getArea(ap, bp, cp);
+
+    }
+
+    function getArea(p1, p2, p3) {
+        return Math.abs((p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y)+ p3.x*(p1.y-p2.y))/2.0);
+    }
+
+    function start(intervalInMilli) {
+        // Plot random point
+        var p;
+        if (clickedPoint == null) p = randomPoint("#ff3300");
+        else {
+            p = clickedPoint;
+            clickedPoint = null;
+        }
+
+        // Start loop
+        if (intervalInMilli != 0) {
+            inProgress = true;
+            document.getElementById("goBtn").disabled = true;
+            document.getElementById("stopBtn").disabled = false;
+        }
+        loop(p, Math.abs(intervalInMilli));
+    }
+
+    async function loop(p, interval) {
+        if (stop) {
+            stop = false;
+            inProgress = false;
+            document.getElementById("goBtn").disabled = false;
+            document.getElementById("stopBtn").disabled = true;
+            return;
+        }
+        var baseP = randomBasePoint();
+
+        var x = (baseP.x + p.x)/2;
+        var y = (baseP.y + p.y)/2;
+        p = new Pixel(x, y, true);
+
+        if (interval != 0) await sleep(interval);
+        loop(p, interval);
+    }
+
+    function randomBasePoint() {
+        const num = Math.floor(Math.random() * 3);
+
+        if (num == 0) return ap;
+        else if (num == 1) return bp;
+        else return cp;
+    }
+
+    function randomPoint(color) {
+        var x1 = ap.x;
+        var y1 = bp.y;
+        var x2 = cp.x;
+        var y2 = cp.y;
+
+        var p;
+        do {
+            var randX = Math.floor(Math.random() * x2-x1) + x1;
+            var randY = Math.floor(Math.random() * y2-y1) + y1;
+            p = new Pixel(randX, randY, false, color);
+        } while (!isInTriangle(p));
+        p.draw();
+        return p;
+    }
+
+    function isInTriangle(point) {
+        let a1 = getArea(point, bp, cp);
+        let a2 = getArea(ap, point, cp);
+        let a3 = getArea(ap, bp, point);
+
+        return a1+a2+a3 == area;
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    const canvas = document.getElementById("myCanvas");
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+
+    canvas.onmousemove = function(event) {
+        if (isInTriangle(new Pixel(event.pageX, event.pageY, false))) {
+            canvas.style.cursor = "pointer";
+        } else {
+            canvas.style.cursor = "default";
+        }
+    }
+    canvas.onclick = function(event) {
+        if (inProgress || !isInTriangle(new Pixel(event.pageX, event.pageY, false))) return;
+
+        if (clickedPoint != null) clickedPoint.clear();
+        clickedPoint = new Pixel(event.pageX, event.pageY, true, "#ff3300");
+        // highlight(event.pageX, event.pageY);
+    }
+
+    const c = canvas.getContext("2d");
+
+    setup();
+
+</script>
